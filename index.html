@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BeagleCafe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-enter-active, .fade-leave-active {
+      transition: opacity 0.3s ease;
+    }
+    .fade-enter-from, .fade-leave-to {
+      opacity: 0;
+    }
+    .slide-enter-active, .slide-leave-active {
+      transition: all 0.3s ease;
+    }
+    .slide-enter-from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    .slide-leave-to {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    .menu-item {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .menu-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .animate-bounce {
+      animation: bounce 0.5s;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-[#FFF5E9] via-[#A3D9A5]/30 to-[#92C9E8]/30 text-[#4B2E2A]">
+
+<div id="app"></div>
+
+<script>
+/* ===== Словарь ===== */
+const dict = {
+  ua: {
+    brand: "БігльКафе",
+    hot: "Гаряче",
+    cold: "Холодні напої",
+    dessert: "Десерти",
+    food: "Їжа",
+    heroTitle1: "Тепла кава та десерти",
+    heroTitle2: "в затишку біглів",
+    heroDesc: "Якісні зерна, еко-склянки, багато опцій без цукру.",
+    seeMenu: "Дивитися меню",
+    call: "Подзвонити",
+    rating: "4.9 у Google",
+    address: "вул. Бариста, 12",
+    search: "Пошук по меню (наприклад: латте, без цукру)",
+    want: "Хочу",
+    add: "Додати",
+    cart: "Кошик",
+    emptyCart: "У кошику порожньо",
+    total: "Разом",
+    checkout: "Оформити",
+    navHot: "Кава",
+    navCold: "Холодні",
+    navDessert: "Десерти",
+    navFood: "Їжа",
+    hit: "хіт",
+    new: "нове",
+    vegan: "веган",
+    checkoutTitle: "Оформлення замовлення",
+    name: "Ім'я",
+    tableLabel: "Номер вашого столу",
+    payment: "Оплата",
+    method_card: "Карткою",
+    method_cash: "Готівкою",
+    comment: "Коментар до замовлення",
+    placeOrder: "Підтвердити замовлення",
+    successTitle: "Дякуємо! Замовлення прийнято",
+    successText: id => `Номер замовлення #${id}. Офіціант принесе вам замовлення до столу.`,
+    backToMenu: "Повернутись до меню",
+  },
+  en: {
+    brand: "BeagleCafe",
+    hot: "Hot",
+    cold: "Cold Drinks",
+    dessert: "Desserts",
+    food: "Food",
+    heroTitle1: "Warm coffee and desserts",
+    heroTitle2: "with cozy beagles",
+    heroDesc: "Quality beans, eco cups, lots of sugar-free options.",
+    seeMenu: "See menu",
+    call: "Call",
+    rating: "4.9 on Google",
+    address: "Barista St, 12",
+    search: "Search the menu (e.g. latte, no sugar)",
+    want: "Add",
+    add: "Add",
+    cart: "Cart",
+    emptyCart: "Your cart is empty",
+    total: "Total",
+    checkout: "Checkout",
+    navHot: "Coffee",
+    navCold: "Cold",
+    navDessert: "Desserts",
+    navFood: "Food",
+    hit: "hit",
+    new: "new",
+    vegan: "vegan",
+    checkoutTitle: "Checkout",
+    name: "Name",
+    tableLabel: "Your table number",
+    payment: "Payment",
+    method_card: "By card",
+    method_cash: "By cash",
+    comment: "Order comment",
+    placeOrder: "Place order",
+    successTitle: "Thanks! Order received",
+    successText: id => `Order number #${id}. The waiter will bring your order to the table.`,
+    backToMenu: "Back to menu",
+  }
+};
+
+/* ===== Menu Items with Translations ===== */
+const drinks = [
+  { id: "espresso", title: { ua: "Еспресо", en: "Espresso" }, desc: { ua: "100% арабіка · 60 мл", en: "100% arabica · 60ml" }, price: 60, img: "beagle/beagle1.png", category: "hot", badges: ["hit"] },
+  { id: "americano", title: { ua: "Американо", en: "Americano" }, desc: { ua: "Міцна · 150 мл", en: "Strong · 150ml" }, price: 65, img: "beagle/beagle2.png", category: "hot", badges: ["hit"] },
+  { id: "latte", title: { ua: "Латте", en: "Latte" }, desc: { ua: "Молочна піна · 180 мл", en: "Milk foam · 180ml" }, price: 70, img: "beagle/beagle3.png", category: "hot", badges: ["hit"] },
+  { id: "flatwhite", title: { ua: "Оранж", en: "Orange" }, desc: { ua: "Баланс еспресо + сік", en: "Espresso + milk balance" }, price: 75, img: "beagle/beagle4.png", category: "hot", badges: ["new"] },
+  { id: "cappuccino", title: { ua: "Капучино", en: "Cappuccino" }, desc: { ua: "Класика · 160 мл", en: "Classic · 160ml" }, price: 70, img: "beagle/beagle5.png", category: "hot" },
+  { id: "mocha", title: { ua: "Мокачино", en: "Mochaccino" }, desc: { ua: "Какао + еспресо · 190 мл", en: "Cocoa + espresso · 190ml" }, price: 80, img: "beagle/beagle6.png", category: "hot" },
+  { id: "raf", title: { ua: "Раф", en: "Raf" }, desc: { ua: "Вершковий · з цукром", en: "Creamy · with sugar" }, price: 85, img: "beagle/beagle13.png", category: "hot", badges: ["new"] },
+  { id: "matcha", title: { ua: "Матча латте", en: "Matcha Latte" }, desc: { ua: "Зелений чай · з молоком", en: "Green tea · with milk" }, price: 90, img: "beagle/beagle14.png", category: "hot", badges: ["vegan"] },
+];
+
+const colds = [
+  { id: "icecoffee", title: { ua: "Айс-кава", en: "Iced Coffee" }, desc: { ua: "Холодна · з льодом", en: "Cold · with ice" }, price: 75, img: "beagle/beagle16.png", category: "cold" },
+  { id: "iceamericano", title: { ua: "Лимонад", en: "Lemonade" }, desc: { ua: "Міцний · з льодом", en: "Strong · with ice" }, price: 70, img: "beagle/beagle20.png", category: "cold" },
+  { id: "icelatte", title: { ua: "Айс-латте", en: "Iced Latte" }, desc: { ua: "З молоком · з льодом", en: "With milk · with ice" }, price: 85, img: "beagle/beagle8.png", category: "cold", badges: ["hit"] },
+  { id: "frappe", title: { ua: "Фраппе", en: "Frappe" }, desc: { ua: "Збитий кавовий", en: "Whipped coffee" }, price: 80, img: "beagle/beagle9.png", category: "cold", badges: ["hit"] },
+  { id: "lemonade", title: { ua: "Мохіто", en: "Moxito" }, desc: { ua: "Освіжаючий · 300 мл", en: "Refreshing · 300ml" }, price: 65, img: "beagle/beagle7.png", category: "cold", badges: ["vegan"] },
+  { id: "smoothie", title: { ua: "Смузі", en: "Smoothie" }, desc: { ua: "Фруктовий мікс · 250 мл", en: "Fruit mix · 250ml" }, price: 95, img: "beagle/beagle15.png", category: "cold", badges: ["vegan"] },
+];
+
+const desserts = [
+  { id: "cheesecake", title: { ua: "Чизкейк Нью-Йорк", en: "New York Cheesecake" }, desc: { ua: "Ніжний крем-сир", en: "Tender cream cheese" }, price: 95, img: "beagle/beagle10.png", category: "dessert", badges: ["hit"] },
+  { id: "tiramisu", title: { ua: "Тірамісу", en: "Tiramisu" }, desc: { ua: "Савоярді та маскарпоне", en: "Savoiardi & mascarpone" }, price: 105, img: "beagle/beagle11.png", category: "dessert" },
+  { id: "macaron", title: { ua: "Макарони (4)", en: "Macarons (4)" }, desc: { ua: "Хрусткі ракушки", en: "Crispy shells" }, price: 110, img: "beagle/beagle12.png", category: "dessert" },
+  { id: "pancakes", title: { ua: "Млинці", en: "Pancakes" }, desc: { ua: "З кленовим сиропом", en: "With maple syrup" }, price: 85, img: "beagle/beagle17.png", category: "dessert", badges: ["new"] },
+  { id: "croissant", title: { ua: "Круасан", en: "Croissant" }, desc: { ua: "З шоколадом чи джемом", en: "With chocolate or jam" }, price: 65, img: "beagle/beagle18.png", category: "dessert" },
+];
+
+const foods = [
+  { id: "sandwich", title: { ua: "Сендвіч", en: "Sandwich" }, desc: { ua: "З куркою та овочами", en: "With chicken & vegetables" }, price: 120, img: "beagle/beagle19.png", category: "food" },
+  { id: "salad", title: { ua: "Салат Цезар", en: "Caesar Salad" }, desc: { ua: "З куркою та грінками", en: "With chicken & croutons" }, price: 135, img: "beagle/beagle21.png", category: "food", badges: ["hit"] },
+  { id: "omelette", title: { ua: "Омлет", en: "Omelette" }, desc: { ua: "З сиром та овочами", en: "With cheese & vegetables" }, price: 110, img: "beagle/beagle22.png", category: "food", badges: ["new"] },
+  { id: "avotoast", title: { ua: "Тост з авокадо", en: "Avocado Toast" }, desc: { ua: "З яйцем пашот", en: "With poached egg" }, price: 125, img: "beagle/beagle23.png", category: "food", badges: ["vegan"] },
+];
+
+/* ===== State Variables ===== */
+let lang = "ua";
+let cart = JSON.parse(localStorage.getItem("beaglecafe_cart") || "[]");
+let searchQuery = "";
+let showCart = false;
+let showCheckout = false;
+let orderSuccess = false;
+let orderId = null;
+
+function saveCart() {
+  localStorage.setItem("beaglecafe_cart", JSON.stringify(cart));
+}
+
+function saveOrder(orderData) {
+  console.log("Order submitted:", orderData);
+  const orders = JSON.parse(localStorage.getItem("beaglecafe_orders") || "[]");
+  orders.push(orderData);
+  localStorage.setItem("beaglecafe_orders", JSON.stringify(orders));
+}
+
+function currency(n) {
+  return `${n}₴`;
+}
+
+function filterItems() {
+  if (!searchQuery) {
+    return {
+      drinks: drinks,
+      colds: colds,
+      desserts: desserts,
+      foods: foods
+    };
+  }
+  
+  const query = searchQuery.toLowerCase();
+  
+  const filterFunc = items => items.filter(item => {
+    const title = item.title[lang].toLowerCase();
+    const desc = item.desc[lang].toLowerCase();
+    return title.includes(query) || desc.includes(query);
+  });
+  
+  return {
+    drinks: filterFunc(drinks),
+    colds: filterFunc(colds),
+    desserts: filterFunc(desserts),
+    foods: filterFunc(foods)
+  };
+}
+
+function renderBadges(badges = []) {
+  if (!badges || badges.length === 0) return '';
+  
+  const badgeClasses = {
+    hit: "bg-[#A3D9A5] text-[#4B2E2A]",
+    new: "bg-[#92C9E8] text-white",
+    vegan: "bg-[#F66B5D] text-white"
+  };
+  
+  const badgeLabels = {
+    hit: dict[lang].hit,
+    new: dict[lang].new,
+    vegan: dict[lang].vegan
+  };
+  
+  return badges.map(badge => `
+    <span class="text-[10px] font-semibold px-2 py-1 rounded-full ${badgeClasses[badge]} shadow">
+      ${badgeLabels[badge]}
+    </span>
+  `).join('');
+}
+
+function renderMenuSection(id, title, items, actionLabel, btnClass) {
+  if (items.length === 0) return '';
+  
+  return `
+    <section id="${id}" class="py-10">
+      <h2 class="text-center text-3xl font-black text-[#4B2E2A] mb-6">${title}</h2>
+      <div class="max-w-7xl mx-auto px-4 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        ${items.map(item => `
+          <div class="menu-item border border-[#A3D9A5]/60 bg-white/80 backdrop-blur-xl rounded-3xl shadow-md hover:shadow-lg transition overflow-hidden">
+            <div class="p-5">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-lg font-bold text-[#4B2E2A]">${item.title[lang]}</div>
+                <div class="flex gap-1">
+                  ${renderBadges(item.badges)}
+                </div>
+              </div>
+              <img src="${item.img}" alt="${item.title[lang]}" class="w-full h-40 object-contain mb-3" />
+              <p class="text-[#4B2E2A]/70 mb-4">${item.desc[lang]}</p>
+              <div class="flex items-center justify-between">
+                <span class="text-2xl font-extrabold text-[#4B2E2A]">${currency(item.price)}</span>
+                <button onclick='addToCart(${JSON.stringify(item)})' class="px-4 py-2 rounded-full font-semibold text-white ${btnClass} hover:opacity-90 active:opacity-80 transition">
+                  ${actionLabel}
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderCartModal() {
+  const t = dict[lang];
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const cartTotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  
+  return `
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300">
+      <div class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300">
+        <div class="p-6 border-b border-[#A3D9A5]/40">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold text-[#4B2E2A]">${t.cart} (${cartCount})</h3>
+            <button onclick="closeCart()" class="text-[#4B2E2A]/50 hover:text-[#4B2E2A] transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-6">
+          ${cart.length === 0 ? `
+            <div class="text-center py-10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-[#4B2E2A]/30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <p class="text-[#4B2E2A]/70">${t.emptyCart}</p>
+            </div>
+          ` : `
+            <div class="space-y-4">
+              ${cart.map(item => `
+                <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-[#A3D9A5]/40">
+                  <div class="flex items-center gap-3">
+                    <img src="${item.img}" alt="${item.title[lang]}" class="w-12 h-12 object-contain" />
+                    <div>
+                      <h4 class="font-medium text-[#4B2E2A]">${item.title[lang]}</h4>
+                      <p class="text-sm text-[#4B2E2A]/60">${currency(item.price)} × ${item.qty}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button onclick="updateCartItem('${item.id}', -1)" class="w-8 h-8 flex items-center justify-center rounded-full bg-[#A3D9A5]/20 text-[#4B2E2A] hover:bg-[#A3D9A5]/40 transition">
+                      -
+                    </button>
+                    <span class="w-8 text-center">${item.qty}</span>
+                    <button onclick="updateCartItem('${item.id}', 1)" class="w-8 h-8 flex items-center justify-center rounded-full bg-[#A3D9A5]/20 text-[#4B2E2A] hover:bg-[#A3D9A5]/40 transition">
+                      +
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+        
+        ${cart.length > 0 ? `
+          <div class="p-6 border-t border-[#A3D9A5]/40">
+            <div class="flex justify-between items-center mb-4">
+              <span class="font-medium text-[#4B2E2A]">${t.total}</span>
+              <span class="text-xl font-bold text-[#4B2E2A]">${currency(cartTotal)}</span>
+            </div>
+            <button onclick="openCheckout()" class="w-full py-3 rounded-xl font-semibold text-white bg-[#FF8C42] hover:opacity-90 transition">
+              ${t.checkout}
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderCheckoutModal() {
+  const t = dict[lang];
+  const cartTotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  
+  return `
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300">
+      <div class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300">
+        <div class="p-6 border-b border-[#A3D9A5]/40">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold text-[#4B2E2A]">${t.checkoutTitle}</h3>
+            <button onclick="closeCheckout()" class="text-[#4B2E2A]/50 hover:text-[#4B2E2A] transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-6">
+          <form id="checkoutForm" onsubmit="placeOrder(event)" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-[#4B2E2A]/80 mb-1">${t.name}</label>
+              <input type="text" required class="w-full px-4 py-2 rounded-xl border border-[#A3D9A5]/60 bg-white/80 transition focus:border-[#FF8C42] focus:ring-1 focus:ring-[#FF8C42]/30">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-[#4B2E2A]/80 mb-1">${t.tableLabel}</label>
+              <input type="number" min="1" required class="w-full px-4 py-2 rounded-xl border border-[#A3D9A5]/60 bg-white/80 transition focus:border-[#FF8C42] focus:ring-1 focus:ring-[#FF8C42]/30">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-[#4B2E2A]/80 mb-1">${t.payment}</label>
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-[#A3D9A5]/40 bg-white/80 transition hover:border-[#FF8C42] cursor-pointer">
+                  <input type="radio" name="payment" value="card" checked class="text-[#FF8C42] focus:ring-[#FF8C42]">
+                  <span>${t.method_card}</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-[#A3D9A5]/40 bg-white/80 transition hover:border-[#FF8C42] cursor-pointer">
+                  <input type="radio" name="payment" value="cash" class="text-[#FF8C42] focus:ring-[#FF8C42]">
+                  <span>${t.method_cash}</span>
+                </label>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-[#4B2E2A]/80 mb-1">${t.comment}</label>
+              <textarea class="w-full px-4 py-2 rounded-xl border border-[#A3D9A5]/60 bg-white/80 transition focus:border-[#FF8C42] focus:ring-1 focus:ring-[#FF8C42]/30" rows="2"></textarea>
+            </div>
+            
+            <div class="pt-4 border-t border-[#A3D9A5]/40">
+              <div class="flex justify-between items-center mb-4">
+                <span class="font-medium text-[#4B2E2A]">${t.total}</span>
+                <span class="text-xl font-bold text-[#4B2E2A]">${currency(cartTotal)}</span>
+              </div>
+              <button type="submit" class="w-full py-3 rounded-xl font-semibold text-white bg-[#FF8C42] hover:opacity-90 transition">
+                ${t.placeOrder}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSuccessModal() {
+  const t = dict[lang];
+  
+  return `
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300">
+      <div class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300">
+        <div class="p-6 border-b border-[#A3D9A5]/40">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold text-[#4B2E2A]">${t.successTitle}</h3>
+          </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-6">
+          <div class="text-center py-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-[#A3D9A5] mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <h3 class="text-xl font-bold text-[#4B2E2A] mb-2">${t.successTitle}</h3>
+            <p class="text-[#4B2E2A]/70 mb-6">${t.successText(orderId)}</p>
+            <button onclick="resetOrder()" class="px-5 py-3 rounded-xl font-semibold text-white bg-[#FF8C42] hover:opacity-90 transition">
+              ${t.backToMenu}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderApp() {
+  const t = dict[lang];
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const cartTotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  const filtered = filterItems();
+
+  document.getElementById("app").innerHTML = `
+    <nav class="sticky top-0 z-40 backdrop-blur-md bg-[#FFF5E9]/80 border-b border-[#A3D9A5]/40">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-xl bg-[#FF8C42] text-white shadow">🐶</div>
+          <span class="font-extrabold text-lg tracking-wide text-[#4B2E2A]">${t.brand}</span>
+          <span class="text-[10px] font-semibold px-2 py-1 rounded-full bg-[#A3D9A5] text-[#4B2E2A] shadow">New</span>
+        </div>
+        <div class="hidden md:flex items-center gap-6 text-sm font-medium text-[#4B2E2A]/80">
+          <a href="#coffee" class="hover:text-[#4B2E2A] transition">${t.navHot}</a>
+          <a href="#cold" class="hover:text-[#4B2E2A] transition">${t.navCold}</a>
+          <a href="#dessert" class="hover:text-[#4B2E2A] transition">${t.navDessert}</a>
+          <a href="#food" class="hover:text-[#4B2E2A] transition">${t.navFood}</a>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="px-3 py-2 rounded-xl bg-white/80 hover:bg-white shadow text-sm font-medium flex items-center border border-[#92C9E8]/50 transition"
+            onclick="toggleLang()">
+            🌐 ${lang.toUpperCase()}
+          </button>
+          <button onclick="openCart()" class="px-3 py-2 rounded-xl font-semibold text-white bg-[#FF8C42] hover:opacity-90 transition relative">
+            ${cartCount ? `${cartCount} · ${currency(cartTotal)}` : t.cart}
+            ${cartCount > 0 ? `
+              <span class="absolute -top-2 -right-2 bg-[#F66B5D] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                ${cartCount}
+              </span>
+            ` : ''}
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <header class="relative">
+      <div class="max-w-7xl mx-auto px-4 pt-12 pb-6 grid md:grid-cols-2 gap-8 items-center">
+        <div>
+          <h1 class="text-4xl sm:text-5xl font-black leading-tight text-[#4B2E2A]">
+            ${t.heroTitle1}
+            <span class="bg-clip-text text-transparent bg-[linear-gradient(90deg,#FF8C42,#F66B5D)]">
+              ${t.heroTitle2}
+            </span>
+          </h1>
+          <p class="mt-4 text-lg text-[#4B2E2A]/80">${t.heroDesc}</p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <a href="#coffee" class="px-5 py-3 rounded-xl font-semibold text-white bg-[#FF8C42] hover:opacity-90 transition">${t.seeMenu}</a>
+            <button class="px-5 py-3 rounded-xl font-semibold bg-white border border-[#F66B5D] text-[#4B2E2A] hover:bg-[#F66B5D]/10 transition">
+              ${t.call}
+            </button>
+          </div>
+          <div class="mt-6 flex items-center gap-4 text-sm text-[#4B2E2A]/80">
+            ⭐️ ${t.rating}  •  📍 ${t.address}  •  ☎️ +380 (00) 000 00 00
+          </div>
+        </div>
+        <div class="relative">        
+          <div class="w-[88%] h-[88%] rounded-3xl border-4 overflow-hidden" style="border-color:#FF8C42; box-shadow: inset 0 0 0 8px #92C9E833;">
+            <img src="beagle/hero-beagle.png" alt="Beagle mascot" class="w-full h-full object-cover" />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="max-w-5xl mx-auto px-4 my-6">
+      <div class="rounded-2xl p-3 sm:p-4 bg-white/80 backdrop-blur border border-[#92C9E8]/50 shadow-sm transition hover:shadow-md">
+        <input 
+          id="search-input"
+          placeholder="${t.search}" 
+          class="w-full h-11 px-3 rounded-xl bg-white border border-[#A3D9A5]/60 text-[#4B2E2A] placeholder-[#4B2E2A]/50 transition focus:border-[#FF8C42] focus:ring-1 focus:ring-[#FF8C42]/30"
+          value="${searchQuery}"
+        >
+      </div>
+    </div>
+
+    ${renderMenuSection("coffee", t.hot, filtered.drinks, t.add, "bg-[#FF8C42]")}
+    ${renderMenuSection("cold", t.cold, filtered.colds, t.add, "bg-[#F66B5D]")}
+    ${renderMenuSection("dessert", t.dessert, filtered.desserts, t.add, "bg-[#FF8C42]")}
+    ${renderMenuSection("food", t.food, filtered.foods, t.add, "bg-[#92C9E8]")}
+    
+    ${showCart ? renderCartModal() : ''}
+    ${showCheckout ? renderCheckoutModal() : ''}
+    ${orderSuccess ? renderSuccessModal() : ''}
+  `;
+
+  // Add event listener for search input after render
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      searchQuery = e.target.value;
+      renderApp();
+      // Keep focus on input after render
+      setTimeout(() => {
+        const newInput = document.getElementById('search-input');
+        if (newInput) {
+          newInput.focus();
+          newInput.setSelectionRange(searchQuery.length, searchQuery.length);
+        }
+      }, 0);
+    });
+  }
+
+  // Smooth scrolling for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({
+          behavior: 'smooth'
+        });
+      }
+    });
+  });
+}
+
+function toggleLang() {
+  lang = lang === "ua" ? "en" : "ua";
+  renderApp();
+}
+
+function addToCart(item) {
+  const existing = cart.find(i => i.id === item.id);
+  if (existing) {
+    existing.qty++;
+  } else {
+    const cartItem = {
+      id: item.id,
+      title: item.title,
+      desc: item.desc,
+      price: item.price,
+      img: item.img,
+      qty: 1
+    };
+    cart.push(cartItem);
+  }
+  saveCart();
+  renderApp();
+  
+  // Show bounce animation on cart button
+  const cartBtn = document.querySelector('button[onclick="openCart()"]');
+  if (cartBtn) {
+    cartBtn.classList.add('animate-bounce');
+    setTimeout(() => cartBtn.classList.remove('animate-bounce'), 1000);
+  }
+}
+
+function updateCartItem(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  
+  item.qty += delta;
+  
+  if (item.qty <= 0) {
+    cart = cart.filter(i => i.id !== id);
+  }
+  
+  saveCart();
+  renderApp();
+}
+
+function openCart() {
+  showCart = true;
+  showCheckout = false;
+  orderSuccess = false;
+  renderApp();
+}
+
+function closeCart() {
+  showCart = false;
+  renderApp();
+}
+
+function openCheckout() {
+  showCart = false;
+  showCheckout = true;
+  orderSuccess = false;
+  renderApp();
+}
+
+function closeCheckout() {
+  showCheckout = false;
+  renderApp();
+}
+
+function placeOrder(event) {
+  event.preventDefault();
+  
+  const form = event.target;
+  const formData = new FormData(form);
+  const orderData = {
+    id: Math.floor(100000 + Math.random() * 900000),
+    name: formData.get('name'),
+    table: formData.get('table'),
+    payment: formData.get('payment'),
+    comment: formData.get('comment'),
+    items: [...cart],
+    total: cart.reduce((s, i) => s + i.qty * i.price, 0),
+    date: new Date().toISOString()
+  };
+  
+  saveOrder(orderData);
+  orderId = orderData.id;
+  cart = [];
+  saveCart();
+  showCheckout = false;
+  orderSuccess = true;
+  renderApp();
+}
+
+function resetOrder() {
+  orderSuccess = false;
+  orderId = null;
+  renderApp();
+}
+
+// Initialize the app
+renderApp();
+</script>
+</body>
+</html>
